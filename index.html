@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filmmaker Shotlist RAG — Studio Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: #111827;
+      --border-color: #1f2937;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      border-bottom: 1px solid var(--border-color);
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(12px);
+      padding: 16px 32px;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background-color: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--success);
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+      width: 100%;
+      flex: 1;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 12px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: var(--text-main);
+      background: var(--accent);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    input[type="text"], select {
+      background: #0d131f;
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus {
+      border-color: var(--accent);
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .shot-card {
+      background: #0d131f;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .shot-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .shot-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shot-title {
+      font-weight: 600;
+      font-size: 15px;
+    }
+
+    .score-badge {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .shot-body {
+      padding: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .drop-zone {
+      border: 2px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 48px;
+      text-align: center;
+      background: #0d131f;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .drop-zone:hover {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.02);
+    }
+
+    .drop-zone p {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .drop-zone small {
+      color: var(--text-muted);
+    }
+
+    pre {
+      background: #090d16;
+      border: 1px solid var(--border-color);
+      padding: 16px;
+      border-radius: 8px;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 13px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .shot-image-container {
+      width: 100%;
+      height: 180px;
+      background-color: #05070a;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .shot-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.3s ease;
+    }
+
+    .shot-card:hover .shot-image {
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-container">
+      <div class="logo-icon">🎬</div>
+      <div class="logo-text">Multimodal RAG Studio</div>
+    </div>
+    <div class="status-badge">
+      <div class="status-dot"></div>
+      <span>FastAPI Localhost:8000</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('search-tab')">🔍 Semantic search</button>
+      <button class="tab-btn" onclick="switchTab('ingest-tab')">📤 Video upload</button>
+    </div>
+
+    <!-- TAB BÚSQUEDA -->
+    <div id="search-tab" class="tab-content active">
+      <div class="card">
+        <h2 style="margin-bottom: 16px; font-size: 18px;">Search Shots by Description</h2>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Example: A wide shot of a man walking in the rain..." onkeydown="if(event.key==='Enter') searchShots()">
+          <button class="btn-primary" onclick="searchShots()">Search Scene</button>
+        </div>
+      </div>
+
+      <div id="resultsContainer" class="results-grid"></div>
+    </div>
+
+    <!-- TAB INGESTA -->
+    <div id="ingest-tab" class="tab-content">
+      <div class="card">
+        <h2 style="margin-bottom: 16px; font-size: 18px;">Batch Ingestion</h2>
+        <form id="uploadForm">
+          <div class="drop-zone" onclick="document.getElementById('fileInput').click()">
+            <p>Click or drag your trailers here (.mp4, .mov)</p>
+            <small>Videos will be processed in the background</small>
+            <input type="file" id="fileInput" name="files" multiple accept="video/mp4,video/quicktime" style="display:none" onchange="updateFileCount(this)">
+          </div>
+          <p id="fileCountText" style="margin-top: 12px; font-size: 14px; color: var(--accent); font-weight: 500;"></p>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 16px;">Start Processing</button>
+        </form>
+      </div>
+
+      <div class="card" id="statusCard" style="display:none;">
+        <h3 style="margin-bottom: 12px; font-size: 16px;">Processing status(Real time - SSE)</h3>
+        <pre id="jsonOutput">Awaiting server response...</pre>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = "http://127.0.0.1:8000";
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    function updateFileCount(input) {
+      const count = input.files.length;
+      document.getElementById('fileCountText').innerText = count > 0 ? `${count} archivo(s) seleccionado(s) listo(s) para procesar` : '';
+    }
+
+    // --- handling video upload ---
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput.files.length === 0) {
+        alert('Please select at least one video file.');
+        return;
+      }
+
+      const formData = new FormData();
+      for (let i = 0; i < fileInput.files.length; i++) {
+        formData.append('files', fileInput.files[i]);
+      }
+
+      const statusCard = document.getElementById('statusCard');
+      const jsonOutput = document.getElementById('jsonOutput');
+      statusCard.style.display = 'block';
+      jsonOutput.innerText = '📤 Uploading videos to server and checking for duplicates...';
+
+      try {
+        const response = await fetch(`${API_URL}/api/ingest`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+        
+        
+        if (!response.ok) {
+          throw new Error(data.detail || 'Error uploading files');
+        }
+
+        jsonOutput.innerText = JSON.stringify(data, null, 2);
+
+        if (data.task_id) {
+          listenTaskStatus(data.task_id);
+        }
+
+      } catch (err) {
+        
+        statusCard.style.display = 'block';
+        jsonOutput.innerText = `⚠️ Ingestion Error:\n\n${err.message}`;
+      }
+    });
+    // --- Real time listener with Server-Sent Events (SSE) ---
+    function listenTaskStatus(taskId) {
+      const jsonOutput = document.getElementById('jsonOutput');
+      
+      // Persistent SSE connection to receive real-time updates from the backend
+      const eventSource = new EventSource(`${API_URL}/api/tasks/${taskId}/stream`);
+
+      eventSource.onmessage = function(event) {
+        const statusData = JSON.parse(event.data);
+        jsonOutput.innerText = JSON.stringify(statusData, null, 2);
+
+        // If the task is completed or failed, close the SSE connection
+        if (statusData.status === 'completed' || statusData.status === 'failed') {
+          eventSource.close();
+          console.log("✅ Task completed. SSE connection closed.");
+        }
+      };
+
+      eventSource.onerror = function(err) {
+        console.error("Error in SSE stream:", err);
+        eventSource.close();
+      };
+    }
+
+    // --- SEMANTIC SEARCH ---
+    async function searchShots() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      const container = document.getElementById('resultsContainer');
+      container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center;">Searching for semantic matches...</p>';
+
+      try {
+        const response = await fetch(`${API_URL}/api/search`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: query, n_results: 6 })
+        });
+
+        const data = await response.json();
+        container.innerHTML = '';
+
+        if (!data.results || data.results.length === 0) {
+          container.innerHTML = '<p style="color: var(--text-muted); grid-column: 1/-1; text-align: center;">No se encontraron planos para esta consulta.</p>';
+          return;
+        }
+
+        data.results.forEach(shot => {
+          const card = document.createElement('div');
+          card.className = 'shot-card';
+
+          let fileName = shot.metadata?.file_name;
+          if (!fileName && shot.metadata?.file_path) {
+            fileName = shot.metadata.file_path.split('/').pop().split('\\').pop();
+          }
+
+          let imageHtml = '';
+          if (fileName) {
+            const imageUrl = `${API_URL}/api/frames/${fileName}`;
+            imageHtml = `
+              <div class="shot-image-container">
+                <img src="${imageUrl}" alt="Frame ${shot.id}" class="shot-image" loading="lazy" onerror="this.onerror=null; this.src='https://via.placeholder.com/320x180?text=Frame+No+Encontrado';">
+              </div>
+            `;
+          } else {
+            imageHtml = `
+              <div class="shot-image-container" style="display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 13px;">
+                <span>Frame not found</span>
+              </div>
+            `;
+          }
+
+          const timestamp = shot.metadata?.timestamp ? `${shot.metadata.timestamp}s` : 'N/A';
+          const scorePercent = shot.score ? (shot.score * 100).toFixed(1) : '0.0';
+
+          card.innerHTML = `
+            ${imageHtml}
+            <div class="shot-header">
+              <span class="shot-title">${shot.metadata?.movie_title || 'Tráiler'}</span>
+              <span class="score-badge">${scorePercent}% Match</span>
+            </div>
+            <div class="shot-body">
+              <p><strong>Shot ID:</strong> ${shot.id}</p>
+              <p style="margin-top: 6px;"><strong>Timestamp:</strong> ${timestamp}</p>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+      } catch (err) {
+        container.innerHTML = `<p style="color: var(--danger); grid-column: 1/-1; text-align: center;">Error conectando a la API: ${err.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

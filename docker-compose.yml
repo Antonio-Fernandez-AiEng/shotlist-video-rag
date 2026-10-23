@@ -1,0 +1,12 @@
+services:
+  video-rag:
+    build: .
+    container_name: shotlist_rag_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./databases:/app/databases
+    environment:
+      - PYTHONUNBUFFERED=1
