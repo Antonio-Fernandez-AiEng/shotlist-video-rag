@@ -24,19 +24,32 @@ A multimodal Video Retrieval-Augmented Generation (RAG) system built from scratc
 ```text
 shotlist_rag/
 │
+├─  assets/                    # Screenshots showing the frontend and different search results
 ├── data/
 │   ├── videos_ingested/       # Raw video files
 │   └── extracted_shots/       # Processed keyframes (auto-sanitized paths)
+├── databases/
+|   ├── chroma_db/             # Vector database to store embeddings
+|   └── sqlite/                # Sql database to store file hashes and avoid uploaded duplicates
+├─  scripts/                   # Script to create a sample video to ingest and test the video processor
 ├── services/
 │   ├── video_processor.py     # Scene detection, SigLIP encoding & frame cleaning
-│   └── db_manager.py          # ChromaDB connection and vector search
+│   ├── db_manager.py          # ChromaDB connection and vector search
+│     ├── db_sqlite.py         # Sqlite connection
+│   └── task_manager.py        #  
 ├── tests/
-│   ├── golden_dataset.json    # Benchmark queries with expected timestamps
+│   ├── golden_dataset.json    # Benchmark queries with expected frame, title and timestamp
+│   ├── test_main.py           # Test the api endpoints and functionalities with Mocks 
+│   ├── test_videoprocessor.py # Frame extraction and video processing
 │   └── evaluate_rag.py        # Evaluation script (Hit Rate & MRR)
+├──config.py                   # Database and data paths
+├── schemas.py                 # Pydantic schemas 
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
+├── index.html                 # Frontend with HTML,CSS and Javascripts
 └── main.py
+
 ```
 
 ---
@@ -61,7 +74,7 @@ The evaluation suite tests the system against a custom *Golden Dataset* measurin
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/tu-usuario/shotlist_rag.git
+git clone https://github.com/Antonio-Fernandez-AiEng/shotlist-video-rag.git
 cd shotlist_rag
 ```
 

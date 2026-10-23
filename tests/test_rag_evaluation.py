@@ -4,7 +4,7 @@ from services.db_manager import db_manager
 from services.video_processor import VideoProcessor
 
 def run_evaluation():
-    print("🚀 [EVAL] Iniciando evaluación de rendimiento del Video RAG...")
+    print("🚀 [EVAL] Start RAG evaluation...")
     db_manager.connect()
     processor = VideoProcessor()
 
@@ -12,7 +12,7 @@ def run_evaluation():
     dataset_path = tests_dir / "golden_dataset.json"
 
     if not dataset_path.exists():
-        raise FileNotFoundError(f"No se encuentra el archivo golden_dataset.json en: {dataset_path}")
+        raise FileNotFoundError(f"File golden_dataset.json not found in: {dataset_path}")
 
     with open(dataset_path, "r", encoding="utf-8") as f:
         golden_data = json.load(f)
@@ -24,7 +24,7 @@ def run_evaluation():
 
     evaluation_results = []
 
-    print(f"🎯 [EVAL] Ejecutando {total_tests} casos de prueba del Golden Dataset...\n")
+    print(f"🎯 [EVAL] Running {total_tests} test cases fom the Golden Dataset...\n")
     
     for i, item in enumerate(golden_data):
         query = item["query"]
@@ -32,7 +32,7 @@ def run_evaluation():
         exp_time = item["expected_timestamp"]
         tolerance = item["tolerance_range"]
 
-        # 1. Generar embedding de la query y buscar en ChromaDB
+        # 1. Generate query embeddings and search on ChromaDB
         query_vector = processor.encode_text_query(query)
         results = db_manager.search_similar(query_vector=query_vector, n_results=3)
 
@@ -41,12 +41,12 @@ def run_evaluation():
         matched_movie = None
         matched_timestamp = None
 
-        # 2. Evaluar la posición del acierto en el Top K
+        # 2. Evaluate the result position in the Top K
         for pos, r in enumerate(results, start=1):
-            movie = r["metadata"].get("movie_title", "Desconocido")
+            movie = r["metadata"].get("movie_title", "Unknown")
             timestamp = r["metadata"].get("timestamp", 0.0)
 
-            # Comprobamos si coincide la película y el timestamp está dentro de la tolerancia
+            # Test if the matching movie and timestamp are in the tolerance range
             if movie.lower() == exp_movie.lower() and abs(timestamp - exp_time) <= tolerance:
                 found_in_top = True
                 found_position = pos
@@ -54,22 +54,22 @@ def run_evaluation():
                 matched_timestamp = timestamp
                 break
 
-        # 3. Calcular métricas de recuperación (Hit Rate y MRR)
+        # 3. Calculate recovery metrics (Hit Rate y MRR)
         if found_in_top:
             hits_top3 += 1
             if found_position == 1:
                 hits_top1 += 1
             reciprocal_ranks.append(1.0 / found_position)
-            status = f"✅ [HIT en Top {found_position}]"
+            status = f"✅ [HIT in Top {found_position}]"
         else:
             reciprocal_ranks.append(0.0)
             status = "❌ [MISS]"
 
         print(f"[{i+1}/{total_tests}] Query: '{query}' -> {status}")
         if found_in_top:
-            print(f"   Esperado: {exp_movie} ({exp_time}s) | Encontrado: {matched_movie} ({matched_timestamp:.1f}s)\n")
+            print(f"   Expected: {exp_movie} ({exp_time}s) | Found: {matched_movie} ({matched_timestamp:.1f}s)\n")
         else:
-            print(f"   Esperado: {exp_movie} ({exp_time}s) | Ningún resultado válido en el Top 3.\n")
+            print(f"   Expected: {exp_movie} ({exp_time}s) | No valid result in the Top 3.\n")
 
         evaluation_results.append({
             "Query": query,
@@ -79,28 +79,28 @@ def run_evaluation():
             "Position": found_position if found_in_top else "N/A"
         })
 
-    # Métricas Globales
+    # Global Metrics
     hit_rate_top3 = (hits_top3 / total_tests) * 100
     hit_rate_top1 = (hits_top1 / total_tests) * 100
     mrr = (sum(reciprocal_ranks) / total_tests) * 100
 
     print("="*60)
-    print("📈 INFORME DE RENDIMIENTO DEL VIDEO RAG")
+    print("📈 PERFORMANCE REPORT FOR VIDEO RAG")
     print("="*60)
-    print(f"🎯 Total de Tests: {total_tests}")
-    print(f"🥇 Hit Rate @1 (Acierto exacto en 1ª posición): {hit_rate_top1:.1f}%")
-    print(f"🥉 Hit Rate @3 (Acierto dentro del Top 3):     {hit_rate_top3:.1f}%")
+    print(f"🎯 Total tests: {total_tests}")
+    print(f"🥇 Hit Rate @1 (Hit first position): {hit_rate_top1:.1f}%")
+    print(f"🥉 Hit Rate @3 (Hit in top 3):       {hit_rate_top3:.1f}%")
     print(f"📊 MRR (Mean Reciprocal Rank):                {mrr:.1f}%")
     print("="*60)
 
-    # Guardar un informe limpio en CSV para el portfolio
+    # Save report in csv
     report_path = tests_dir.parent / "video_rag_evaluation_report.csv"
     with open(report_path, "w", encoding="utf-8") as f:
         f.write("Query,Expected_Movie,Expected_Time,Status,Position\n")
         for res in evaluation_results:
             f.write(f"\"{res['Query']}\",\"{res['Expected_Movie']}\",{res['Expected_Time']},{res['Status']},{res['Position']}\n")
 
-    print(f"💾 Informe de métricas guardado con éxito en '{report_path}'.")
+    print(f"💾 Metrics report succesfully sabed in'{report_path}'.")
     db_manager.disconnect()
 
 if __name__ == "__main__":
